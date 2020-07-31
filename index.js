@@ -1,35 +1,26 @@
 async function mapObj( obj ) {
-    let o = obj instanceof Array ? []: {};
-    for ( let k in obj ) {
-        const v = obj[k]
-        if ( v instanceof Promise ) {
-            try {
-                o[k] = await v
-            } catch(err) {
-                o[k] = err
-            }
-            continue
-        }
-        if ( v instanceof Function ) {
-            try {
-                o[k] = await v()
-            } catch(err) {
-                o[k] = err
-            }
-            continue
-        }
-        if ( v instanceof Array ) {
-            o[k] = await mapObj(v)
-            continue
-        }
-        if ( Object.prototype.toString.call(v) === '[object Object]' ) {
-            o[k] = await mapObj(v)
-            continue
-        }
-
-        o[k] = v
+    try {
+        if ( obj instanceof Promise ) return obj
+        if ( obj instanceof Function ) return obj()
+    } catch (err) {
+        return errr
     }
-    return o
+    if ( obj instanceof Array ) {
+        return Promise.all(obj.map(mapObj))
+    }
+    if ( obj instanceof Object ) {
+        const kyes = Object.keys(obj)
+        return Promise.all(
+            kyes.map( k => mapObj(obj[k]))
+        ).then( v => {
+            const o = {}
+            kyes.map( (k,i) => {
+                o[k] = v[i] 
+            })
+            return o
+        })
+    }
+    return obj
 }
 async function promiesLog( ...promies ) {
     return mapObj(promies).then( e => {
